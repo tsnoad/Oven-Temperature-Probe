@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'static/**'
+      - 'esphome-oven-temperature-probe/static/**'
       - '.github/workflows/publish-pages.yml'
   workflow_run:
     workflows:
@@ -14,7 +14,7 @@ on:
       - completed
   pull_request:
     paths:
-      - 'static/**'
+      - 'esphome-oven-temperature-probe/static/**'
       - '.github/workflows/publish-pages.yml'
 
 permissions: {}
