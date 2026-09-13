@@ -27,3 +27,50 @@ wifi:
 # In combination with the `ap` this allows the user
 # to provision wifi credentials to the device.
 captive_portal:
+
+spi:
+  miso_pin: 5
+  mosi_pin: 6
+  clk_pin: 4
+
+sensor:
+  - platform: max6675
+    id: my_sensor
+    name: "Oven Probe Temperature"
+    cs_pin: 7
+    update_interval: 500ms
+    filters:
+      - or:
+        - throttle: 30s
+        - delta: 2.0
+  - platform: template
+    id: my_sensor_smoothed
+    internal: true
+    update_interval: 500ms
+    lambda: return id(my_sensor).get_raw_state();
+    filters:
+      - sliding_window_moving_average:
+          window_size: 5
+          send_every: 1
+
+display:
+  - platform: max7219
+    cs_pin: 10
+    num_chips: 1
+    update_interval: 500ms
+    # setup_priority: -100
+    lambda: |-
+      it.printf(1, "%.1f", id(my_sensor).state);
+
+      float temp = id(my_sensor_smoothed).state;
+
+      if (isnan(temp)) {
+        it.printf(0, "----");
+        return;
+      }
+      
+      if (temp >= 100.0f || temp <= -10.0f) {
+        it.printf(4, "%3.0f~", temp);
+      } else {
+        it.printf(4, "%2.1f~", temp);
+      }
