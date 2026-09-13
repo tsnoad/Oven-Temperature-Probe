@@ -59,10 +59,10 @@ part_bom = 99;
     //     cylinder_bev(case_crn_r,base_hgt+top_hgt,bev_m,bev_m,wing_crn_trans+outset_xxyy_to_trans(0,50,0,0));
     // }
 }
-skeletion_view_intersect("red") {
+*skeletion_view_intersect("red") {
     material_3dprint(color_595C_tan_525) part_tray();
 }
-*skeletion_view_intersect("red") {
+skeletion_view_intersect("red") {
     material_3dprint(color_595C_tan_525) part_top();
 }
 
@@ -77,7 +77,7 @@ skeletion_view_intersect("red") {
 
 // feature_esp32c3_supermini(part_base,operation_placeholder);
 
-// for(i_part=[0:99]) features(i_part,operation_placeholder);
+for(i_part=[0:99]) features(i_part,operation_placeholder);
 // features(part_bom,operation_bom);
 
 module skeletion_view_intersect(color="red") {
@@ -843,29 +843,14 @@ module feature_max6675(part,operation,position=[0,0,0],feature_attach,feature_ro
                     for(it=screw_trans) translate(it-[0,0,pcb_dim.z]) mirror([0,0,1]) material_stainless_steel() screw_m3_torx_placeholder(6);
                 }
             }
-
-
-            // if(operation == operation_difference)  {
-            //     for(it=pin_loc) component_co_upwards(tray_hgt,tray_hgt,pin_dupont_header_co_crn_trans(it));
-            //     component_top_component_co(top_component_trans,top_component_z,tray_hgt);
-            // }
-            // if(operation == operation_placeholder) {
-            //     max6675_placeholder();
-            //     for(it=list_partial(pin_loc,0,4)) translate(it) rotate([0,0,180]) pin_header_placeholder_upwards();
-            // }
-
         }
 
-        // for(it=screw_trans) {
-        //     let(screw_len=6) bom_item(part,operation,str("M3 x ",screw_len,"mm self-tapping flat-end plastic screw"));
+        if(part == part_top && operation == operation_difference) translate([0,0,base_hgt]) {
+            for(it=list_partial(pin_loc,0,2)) component_co_upwards(top_hgt-1,top_hgt,vec_to_array(it,4)+(pin_jstxh_header_co_crn_trans()+outset_xxyy_to_trans(4,4,0,0))*rotation_matrix(90));
 
-        //     if(part == part_tray) translate([0,0,tray_z]) {
-        //         if(operation == operation_difference) cylinder_bev_co_through(1.25,tray_hgt,bev_m,bev_m+pcb_dim.z,0,[it]);
-        //         if(operation == operation_placeholder) translate(it+[0,0,tray_hgt]) material_stainless_steel() screw_m3_torx_placeholder(6);
-        //         // if(operation == operation_difference) cylinder_bev_co_through(1.25,tray_hgt,bev_m,bev_m,0,[it]);
-        //         // if(operation == operation_placeholder) translate(it+[0,0,-pcb_dim.z]) mirror([0,0,1]) material_stainless_steel() screw_m3_torx_placeholder(6);
-        //     }
-        // }
+
+            let(top_component_trans_for_top=[for(i=[0:len(top_component_trans)-1]) if(top_component_z[i] > 5) top_component_trans[i]]) component_top_component_co(top_component_trans_for_top,[for(i=[0:len(top_component_trans_for_top)-1]) top_hgt-0.8],top_hgt);
+        }
     }
 }
 
@@ -926,6 +911,8 @@ module feature_max7219_display(part,operation,position=[0,0,0],feature_attach=at
             cylinder_bev_co_through(max7219_display_crn_r,top_hgt-1,bev_m,bev_m,clr_close,max7219_display_crn_trans);
 
             translate([0,0,top_hgt]) cylinder_bev_co_blind_downwards(max7219_display_crn_r+2,1,bev_m,bev_m,clr_close,max7219_display_crn_trans-outset_to_trans(2)+outset_xxyy_to_trans(8,8,16,4));
+
+            for(it=list_partial(pin_loc,5,10-1)) component_co_upwards(top_hgt,top_hgt,pin_jstxh_header_co_crn_trans(it,0));
         }
     }
 }
@@ -993,6 +980,10 @@ module feature_buzzer(part,operation,position=[0,0,0],feature_attach,feature_rot
                     for(it=screw_trans) translate(it-[0,0,pcb_dim.z]) mirror([0,0,1]) material_stainless_steel() screw_m3_torx_placeholder(6);
                 }
             }
+        }
+
+        if(part == part_top && operation == operation_difference) translate([0,0,base_hgt]) {
+            for(it=list_partial(pin_loc,0,2)) component_co_upwards(top_hgt-1,top_hgt,vec_to_array(it,4)+(pin_jstxh_header_co_crn_trans()+outset_xxyy_to_trans(4,4,0,0))*rotation_matrix(90));
         }
     }
 }
