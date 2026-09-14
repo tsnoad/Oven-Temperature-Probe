@@ -9,6 +9,11 @@ include <../Shared Libraries/materials.scad>;
 // show_only_material = "stainless_steel";
 // show_only_material = "brass";
 // show_only_material = "plastic_black";
+// show_only_material = "plastic_white";
+// show_only_material = "plastic_blue";
+// show_only_material = "gold";
+// show_only_material = "nickel";
+// show_only_material = "led_emitter";
 // show_only_material = "3dprint";
 
 include <../Shared Libraries/components/screws.scad>;
@@ -62,23 +67,11 @@ part_bom = 99;
 *skeletion_view_intersect("red") {
     material_3dprint(color_595C_tan_525) part_tray();
 }
-skeletion_view_intersect("red") {
+*skeletion_view_intersect("red") {
     material_3dprint(color_595C_tan_525) part_top();
 }
 
-
-// !union() {
-//     feature_probe_slot(part_base,operation_difference);
-//     feature_cable_gland(part_base,operation_difference);
-//     translate([0,0,base_hgt]) cylinder_bev_co_blind_downwards(case_crn_r-w6,base_hgt-base_floor_skin_thk,bev_m,bev_m,0,case_crn_trans);
-// }
-
-// feature_magnets(part_base,operation_placeholder);
-
-// feature_esp32c3_supermini(part_base,operation_placeholder);
-
 for(i_part=[0:99]) features(i_part,operation_placeholder);
-// features(part_bom,operation_bom);
 
 module skeletion_view_intersect(color="red") {
     intersection() {
@@ -148,7 +141,10 @@ module part_top() difference() {
             // cylinder_bev_co_through(case_crn_r-w6,base_hgt,bev_m,bev_m,0,case_crn_trans);
         }
     }
-    features(part_top,operation_difference);
+    // intersection() {
+        features(part_top,operation_difference);
+        // translate([0,0,base_hgt+0.2]-[1,1,0]*200) cube([2,2,1]*200); 
+    // }
 }
 
 // !feature_max6675(part_tray,operation_placeholder,battery_position-[44,0,0],attach_left);
