@@ -13,7 +13,7 @@ esphome:
 # In this case it is the core yaml file that does not contain the extra things
 # that are provided by this factory yaml file as the user does not need these once adopted.
 dashboard_import:
-  package_import_url: github://tsnoad/esphome-oven-temperature-probe/oven-temperature-probe-esp32-c3.yaml@main
+  package_import_url: github://tsnoad/oven-temperature-probe/esphome-oven-temperature-probe/oven-temperature-probe-esp32-c3.yaml@main
 
 # Sets up Bluetooth LE (Only on ESP32) to allow the user
 # to provision wifi credentials to the device.
@@ -33,4 +33,4 @@ ota:
 update:
   - platform: http_request
     name: Firmware
-    source: https://tsnoad.github.io/esphome-oven-temperature-probe/firmware/oven-temperature-probe.manifest.json
+    source: https://tsnoad.github.io/Oven-Temperature-Probe/firmware/oven-temperature-probe.manifest.json
