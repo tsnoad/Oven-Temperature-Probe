@@ -36,6 +36,10 @@ spi:
   clk_pin: 4
 
 sensor:
+  - platform: adc
+    pin: GPIO2
+    id: raw_battery_voltage
+    attenuation: 11db
   - platform: max6675
     id: my_sensor
     name: "Oven Probe Temperature"
