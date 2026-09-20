@@ -39,10 +39,6 @@ case_dim = [134,58,0];
 case_crn_r = 3+clr_close+w6;
 case_crn_trans = xyz_to_trans(case_dim/2)-outset_to_trans(case_crn_r);
 
-wing_wid = 22;
-case_with_wing_crn_trans = case_crn_trans+outset_xxyy_to_trans(0,1,0,0)*(clr_close+wing_wid);
-wing_crn_trans = case_with_wing_crn_trans-outset_xxyy_to_trans(1,0,0,0)*(case_dim.x+clr_close);
-
 tray_hgt = 6;
 tray_z = base_hgt+top_hgt-max7219_display_hgt-tray_hgt;
 
@@ -57,19 +53,17 @@ part_tray = 2;
 part_top = 3;
 part_bom = 99;
 
-*skeletion_view_intersect("red") {
-    material_3dprint(color_595C_tan_525) part_base();
-    // material_3dprint(color_595C_tan_525) intersection() {
-    //     part_base();
-    //     cylinder_bev(case_crn_r,base_hgt+top_hgt,bev_m,bev_m,wing_crn_trans+outset_xxyy_to_trans(0,50,0,0));
-    // }
-}
-*skeletion_view_intersect("red") {
-    material_3dprint(color_595C_tan_525) part_tray();
-}
-*skeletion_view_intersect("red") {
-    material_3dprint(color_595C_tan_525) part_top();
-}
+// skeletion_view_intersect("red") material_3dprint(color_595C_tan_525) part_base();
+// skeletion_view_intersect("red") material_3dprint(color_595C_tan_525) part_tray();
+// skeletion_view_intersect("red") material_3dprint(color_595C_tan_525) part_top();
+
+// feature_probe_slot(part_base,operation_difference);
+// feature_cable_gland(part_base,operation_difference);
+
+
+material_3dprint(color_595C_tan_525) part_base();
+// material_3dprint(color_595C_tan_525) part_tray();
+material_3dprint(color_595C_tan_525) part_top();
 
 for(i_part=[0:99]) features(i_part,operation_placeholder);
 
@@ -82,24 +76,21 @@ module skeletion_view_intersect(color="red") {
 
         // color(color) translate([case_dim.x/2+clr_close+wing_wid+20/2,0,0]-[2,1,0]*100) cube([2,2,2]*100);
         // color(color) translate([case_dim.x/2+clr_close+wing_wid/2,0,0]-[0,1,0]*100) cube([2,2,2]*100);
+
+        // color(color) translate(-[0,case_dim.y/2+clr_close+wing_wid/2,0]-[1,0,0]*100) cube([2,2,2]*100);
+        color(color) translate([case_dim.x/2-36/2,0,0]-[2,1,0]*100) cube([2,2,2]*100);
     }
 }
 
 module part_base() let(part_name=part_base) difference() {
     union() {
         difference() {
-            cylinder_bev(case_crn_r,base_hgt,bev_m,bev_m,case_with_wing_crn_trans);
-            // cylinder_bev(case_crn_r,base_hgt,bev_m,bev_m,case_crn_trans);
-            // cylinder_bev(case_crn_r,base_hgt,bev_m,bev_m,wing_crn_trans);
+            cylinder_bev(case_crn_r,base_hgt,bev_m,bev_m,case_crn_trans);
             translate([0,0,base_hgt]) cylinder_bev_co_blind_downwards(case_crn_r-w6,base_hgt-base_floor_skin_thk,bev_m,bev_m,0,case_crn_trans);
         }
         difference() {
             cylinder_bev(case_crn_r,base_floor_thk,bev_m,bev_m,case_crn_trans);
             translate([0,0,base_floor_thk]) trigrid_co_blind_downwards(0.5,17.5,110/2,base_floor_thk-base_floor_skin_thk,bev_m,bev_m);
-        }
-        if(!is_undef(wing_wid) && wing_wid > 0) intersection() {
-            cylinder_bev(case_crn_r,base_hgt+top_hgt,bev_m,bev_m,case_with_wing_crn_trans);
-            translate([0,0,base_hgt-bev_m]) cylinder_bev_stud(case_crn_r,bev_m+top_hgt,bev_m+bev_s,bev_m,wing_crn_trans);
         }
 
         intersection() {
@@ -140,6 +131,8 @@ module part_top() difference() {
 
             // cylinder_bev_co_through(case_crn_r-w6,base_hgt,bev_m,bev_m,0,case_crn_trans);
         }
+        features(part_top,operation_union);
+        features(part_top,operation_union_nonintersect);
     }
     // intersection() {
         features(part_top,operation_difference);
@@ -149,6 +142,10 @@ module part_top() difference() {
 
 // !feature_max6675(part_tray,operation_placeholder,battery_position-[44,0,0],attach_left);
 
+// !difference() {
+//     feature_magnets(part_base,operation_union);
+//     feature_magnets(part_base,operation_difference);
+// }
 
 use_mcu_esp32c3_supermini     = 1;
 use_mcu_esp32c3_superminiplus = 2;
@@ -163,39 +160,47 @@ use_battery = use_battery_21700;
 battery_position = [-(max6675_pcb_dim.x-buzzer_mhfmd_pcb_dim.x)/2,0,0];
 
 module features(part,operation) {
-    feature_screws(part,operation);
-    feature_feet(part,operation);
-    feature_magnets(part,operation);
+    show_base_placeholders = (true && operation == operation_placeholder) || operation != operation_placeholder;
+    show_tray_placeholders = (true && operation == operation_placeholder) || operation != operation_placeholder;
+    show_top_placeholders = (true && operation == operation_placeholder) || operation != operation_placeholder;
+    
+    feature_top_esphome_logo(part,operation);
 
-    feature_probe_slot(part,operation);
-    feature_cable_gland(part,operation);
+    if(show_top_placeholders) feature_screws(part,operation);
+    if(show_base_placeholders) feature_feet(part,operation);
+    if(show_base_placeholders) feature_magnets(part,operation);
 
-    feature_tray_screws(part,operation);
+    if(show_base_placeholders) feature_probe_slot(part,operation);
+    if(show_base_placeholders) feature_cable_gland(part,operation);
+
+    if(show_tray_placeholders) feature_tray_screws(part,operation);
 
     if(use_mcu == use_mcu_esp32c3_supermini) {
-        feature_esp32c3_supermini(part,operation,[-1.6,case_dim.y/2,0],attach_bottomleft,0,6);
-        feature_bms(part,operation,[0,case_dim.y/2,0],attach_bottomright,0,6);
+        if(show_base_placeholders) feature_esp32c3_supermini(part,operation,[-1.6,case_dim.y/2,0],attach_bottomleft,0,6);
+        if(show_base_placeholders) feature_bms(part,operation,[0,case_dim.y/2,0],attach_bottomright,0,6);
     }
     if(use_mcu == use_mcu_esp32c3_superminiplus) {
-        feature_esp32c3_superminiplus(part,operation,[0,case_dim.y/2,0],attach_bottom,0,6);
+        if(show_base_placeholders) feature_esp32c3_superminiplus(part,operation,[0,case_dim.y/2,0],attach_bottom,0,6);
     }
     if(use_mcu == use_mcu_esp32s3_supermini) {
-        feature_esp32s3_supermini(part,operation,[0,case_dim.y/2,0],attach_bottom,0,6);
+        if(show_base_placeholders) feature_esp32s3_supermini(part,operation,[0,case_dim.y/2,0],attach_bottom,0,6);
     }
     
     max7219_display_position = [-1.5,-6,0];
-    feature_max7219_display(part,operation,max7219_display_position+[0,case_dim.y/2,0],attach_bottom);
+    if(show_tray_placeholders) feature_max7219_display(part,operation,max7219_display_position+[0,case_dim.y/2,0],attach_bottom);
 
     if(use_battery == use_battery_18650) {
-        feature_battery_18650(part,operation,battery_position+[0,-case_dim.y/2,0],attach_top,90);
+        if(show_base_placeholders) feature_battery_18650(part,operation,battery_position+[0,-case_dim.y/2,0],attach_top,90);
     }
     if(use_battery == use_battery_21700) {
-        feature_battery_21700(part,operation,battery_position+[0,-case_dim.y/2,0],attach_top,90);
+        if(show_base_placeholders) feature_battery_21700(part,operation,battery_position+[0,-case_dim.y/2,0],attach_top,90);
     }
 
-    feature_max6675(part,operation,battery_position+[44,0,0],attach_right,0);
-    feature_buzzer(part,operation,battery_position-[44,0,0],attach_left);
+    if(show_tray_placeholders) feature_max6675(part,operation,battery_position+[44,0,0],attach_right,0);
+    if(show_tray_placeholders) feature_buzzer(part,operation,battery_position-[44,0,0],attach_left);
 }
+
+// function filter_placeholders_by_part()
 
 module bom_item(part,operation,bom_item_name) {
     if(!is_undef(show_bom) && show_bom) if(part == part_bom && operation == operation_bom) {
@@ -206,6 +211,53 @@ module bom_item(part,operation,bom_item_name) {
 
 module base_boss_cylinder_bev(rad,hgt,bev_btm=0,bev_top=0,trans_arr=[[0,0,0]]) {
     translate([0,0,base_floor_skin_thk]) cylinder_bev_stud(rad,-base_floor_skin_thk+hgt,bev_btm,bev_top,trans_arr);
+}
+
+// !feature_top_esphome_logo(part_top,operation_union_nonintersect);
+
+module feature_top_esphome_logo(part,operation) {
+    position = [-case_dim.x/2,0,0];
+    pcb_dim = [12,12,1];
+    feature_attach = attach_right;
+    feature_rotate = 0;
+
+    logo_dim = [240,234,0];
+    logo_house_crn_r = 15;
+    logo_house_crn_vertices = concat(
+        xyz_to_trans(logo_dim/2-[1,1,0]*logo_house_crn_r)-outset_xxyy_to_trans(0,0,0,logo_dim.x/2),
+        [[0,logo_dim.y/2-logo_house_crn_r,0]],
+    );
+
+    logo_e_line_wid = 12;
+    logo_e_points = [
+        [0,-logo_dim.y/2,0]+[-40,0,0],
+        [0,-logo_dim.y/2,0]+[-40,150,0],
+        [0,-logo_dim.y/2,0]+[40,150,0],
+        [0,-logo_dim.y/2,0]+[40,150-2*logo_e_line_wid,0],
+        [0,-logo_dim.y/2,0]+[-40+2*logo_e_line_wid,150-2*logo_e_line_wid,0],
+        [0,-logo_dim.y/2,0]+[-40+2*logo_e_line_wid,150-4*logo_e_line_wid,0],
+        [0,-logo_dim.y/2,0]+[40,150-4*logo_e_line_wid,0],
+        [0,-logo_dim.y/2,0]+[40,150-6*logo_e_line_wid,0],
+        [0,-logo_dim.y/2,0]+[-40+2*logo_e_line_wid,150-6*logo_e_line_wid,0],
+        [0,-logo_dim.y/2,0]+[-40+2*logo_e_line_wid,150-8*logo_e_line_wid,0],
+        [0,-logo_dim.y/2,0]+[40,150-8*logo_e_line_wid,0],
+        [0,-logo_dim.y/2,0]+[40,150-10*logo_e_line_wid,0],
+        [0,-logo_dim.y/2,0]+[-40+2*logo_e_line_wid,150-10*logo_e_line_wid,0],
+    ];
+    logo_e_segments = [for(i=[0:len(logo_e_points)-2]) [for(j=[i,i+1]) logo_e_points[j]]];
+    echo(logo_e_segments);
+
+    logo_e_line_wid_scaled = w2;
+    logo_scale = logo_e_line_wid_scaled/logo_e_line_wid;
+    logo_hgt_scaled = 0.4;
+    logo_hgt_unscaled = logo_hgt_scaled/logo_scale;
+
+    translate(position+(pcb_dim/2+[1,1,0]*(8))*feature_attach) rotate([0,0,feature_rotate]) {
+        if(part == part_top && operation == operation_union_nonintersect) translate([0,0,base_hgt+top_hgt]) scale(logo_scale) difference() {
+            cylinder_bev_stud(logo_house_crn_r,logo_hgt_unscaled,logo_hgt_unscaled,0,logo_house_crn_vertices);
+            translate([0,0,logo_hgt_unscaled]) for(logo_e_segment_vertices=logo_e_segments) cylinder_bev_co_blind_downwards(logo_e_line_wid/2,logo_hgt_unscaled,0,0.01,0,logo_e_segment_vertices);
+        }
+    }
 }
 
 module feature_screws(part,operation) {
@@ -282,7 +334,8 @@ module feature_tray_screws(part,operation) {
 }
 
 module feature_feet(part,operation) {
-    base_feet_trans = xyz_to_trans(case_dim/2)-outset_to_trans(w6+2+3.8/2)-outset_xxyy_to_trans(1,1,0,0)*17+tray_screw_offsets;
+    // base_feet_trans = xyz_to_trans(case_dim/2)-outset_to_trans(w6+2+3.8/2)-outset_xxyy_to_trans(1,1,0,0)*17+tray_screw_offsets;
+    base_feet_trans = xyz_to_trans(case_dim/2)-outset_to_trans(w6+2+3.8/2);
 
     for(it=base_feet_trans) {
         bom_item(part,operation,str("FC-040 Rubber foot"));
@@ -298,10 +351,10 @@ module feature_feet(part,operation) {
     }
 }
 
-magnet_80r30_r = 8/2;
-magnet_80r30_h = 3;
-
-magnet_trans = xyz_to_trans([case_dim.x/2-w6-1,w6/2,0]+[-1,1,0]*(magnet_80r30_r+clr_close));
+magnet_trans = concat(
+    xyz_to_trans([case_dim.x/2-w6-1,w6/2,0]+[-1,1,0]*(magnet_80r30_r+clr_close)),
+    vec_to_array([0,case_dim.y/2-w6-1,0]+[0,-1,0]*(magnet_80r30_r+clr_close),2)+list_x_to_vec([-1,1]*(case_dim.x/2-w6-24)+[0,-2]),
+);
 
 module feature_magnets(part,operation) {
     boss_hgt = 0.4+2*magnet_80r30_h;
@@ -310,7 +363,14 @@ module feature_magnets(part,operation) {
         bom_item(part,operation,str(magnet_80r30_r*2,"mm x ",magnet_80r30_h,"mm neodymium magnet"));
 
         if(part == part_base) {
-            boss_crn_trans = vec_to_array(it,4)+xyz_to_trans([1,0,0]*10+[0,abs(it.y/2),0],ident_xyz(sign(it.x),-sign(it.y),0));
+            boss_crn_trans = let(
+                it_abs=[abs(it.x),abs(it.y),abs(it.z)],
+                wall_dist=case_dim/2-it_abs,
+                tray_screw_wall_dist = magnet_80r30_r+clr_close+1+w6+1,
+                attach_to_wall=[wall_dist.x<=tray_screw_wall_dist?sign(it.x):0,wall_dist.y<=tray_screw_wall_dist?sign(it.y):0,0],
+                attach_to_axis=[it_abs.x<=tray_screw_wall_dist?sign(it.x):0,it_abs.y<=tray_screw_wall_dist?sign(it.y):0,0],
+            // ) vec_to_array(it,4)+xyz_to_trans([1,0,0]*10+[0,abs(it.y/2),0],ident_xyz(sign(it.x),-sign(it.y),0));
+            ) echo(attach_to_wall,attach_to_axis) vec_to_array(it,4)+xyz_to_trans([abs(attach_to_wall.x),abs(attach_to_wall.y),0]*10,ident_xyz(sign(it.x),sign(it.y),0))+xyz_to_trans([abs(attach_to_axis.x),abs(attach_to_axis.y),0]*5,-ident_xyz(sign(it.x),sign(it.y),0));
             
             if(operation == operation_union) {
                 base_boss_cylinder_bev(magnet_80r30_r+clr_close+w6,boss_hgt,bev_m,bev_m,boss_crn_trans);
@@ -330,19 +390,20 @@ module feature_magnets(part,operation) {
 
 module feature_cable_gland(part,operation) {
     boss_wid = 22;
+    boss_hgt = base_hgt+top_hgt-6;
     boss_y_inset = 20;
 
-    boss_crn_r = 4;
-    boss_crn_trans = wing_crn_trans+outset_to_trans(case_crn_r-boss_crn_r)+outset_xxyy_to_trans(case_crn_r+4-wing_wid,boss_wid,-boss_y_inset,0);
+    // cable_gland_pos = case_dim/2*ident_xyz(1,-1,0)+[wing_wid+clr_close+boss_wid/2,boss_y_inset,boss_hgt/2];
 
-    boss_hgt = base_hgt+top_hgt-6;
-
-    boss_fillet_r = 2;
-
-    cable_gland_pos = case_dim/2*ident_xyz(1,-1,0)+[wing_wid+clr_close+boss_wid/2,boss_y_inset,boss_hgt/2];
+    cable_gland_pos = case_dim/2*ident_xyz(1,-1,0)+[0,-(clr_close+wing_wid/2)+w6/2,boss_hgt/2-1];
 
     if(part == part_base) {
-        if(operation == operation_union_nonintersect) {
+        *if(probe_slot_position == probe_slot_position_side && operation == operation_union_nonintersect) {
+            boss_crn_r = 4;
+            boss_crn_trans = wing_crn_trans+outset_to_trans(case_crn_r-boss_crn_r)+outset_xxyy_to_trans(case_crn_r+4-wing_wid,boss_wid,-boss_y_inset,0);
+
+            boss_fillet_r = 2;
+
             cylinder_bev(boss_crn_r,boss_hgt,bev_m,bev_m,boss_crn_trans);
 
             translate(case_dim/2*ident_xyz(1,-1,0)+[wing_wid+clr_close,0,0]+[0,boss_y_inset,0]) let(crn_r=boss_fillet_r,hgt=boss_hgt,bev_btm=bev_m,bev_top=bev_m) rotate([0,0,90]) translate(-[1,1,0]*crn_r) rotate_extrude(angle=90) polygon([
@@ -377,72 +438,200 @@ module feature_cable_gland(part,operation) {
             recess_len = case_dim.y-boss_y_inset-recess_y_inset-2*w6;
             recess_crn_trans = vec_to_array(cable_gland_pos*ident_xyz(1,1,0)+[0,w6+recess_y_inset,0],4)+xyz_to_trans([boss_wid/2-w6,recess_len/2,0],attach_top)-outset_to_trans(4-w6);
 
-            translate(cable_gland_pos) rotate([-90,0,0]) {
-                cylinder_oh_bev_co_through(8/2,w6,bev_s,bev_s,clr_close);
+            // translate(cable_gland_pos*ident_xyz_xy) cable_gland_cutout(cable_gland_pos.z);
 
-                translate([0,0,w6+recess_y_inset]) {
-                    cylinder_oh_bev_co_blind_downwards(0,recess_y_inset,0,bev_s,clr_close,points_reg_polygon_flat(6)*13/2);
-                    cylinder_bev(clr_close+bev_s,4,0,0,points_reg_polygon_flat(6)*13/2);
-                    cylinder_bev_rad(boss_wid/2-w6,recess_len,4-w6,4-w6);
-                }
-            }
-            cylinder_bev_co_through(0.5,1,bev_m,bev_s,0,recess_crn_trans-outset_to_trans(0.5));
 
-            translate([0,0,1]) cylinder_bev(4-w6,-1+cable_gland_pos.z,bev_m,0,recess_crn_trans);
-            translate([0,0,1]) {
-                cylinder_bev(4-w6,-1+cable_gland_pos.z-2,bev_m,0,recess_crn_trans+outset_xxyy_to_trans(5,0,0,0));
-                intersection() {
-                    cylinder_bev(4-w6+1,-1+cable_gland_pos.z-2+1,bev_m,1,recess_crn_trans);
-                    cylinder_bev(4-w6,-1+cable_gland_pos.z,bev_m,0,recess_crn_trans+outset_xxyy_to_trans(5,0,0,0));
-                }
-                cylinder_bev(4-w6,-1+cable_gland_pos.z-2-0.4,bev_m,0,recess_crn_trans+outset_xxyy_to_trans(wing_wid+w6+clr_close,0,-10,0));
+            let(cable_gland_z=cable_gland_pos.z,recess_wid_half=wing_wid/2-w6+w6/2,recess_len=36) translate(cable_gland_pos*ident_xyz_xy) {
+                rotate([0,0,90]) cable_gland_cutout(cable_gland_z,recess_wid_half,recess_len);
+
+                translate([-recess_len/2,0,probe_slot_floor_z-1.2]) rotate([-90,0,0]) cylinder_oh_bev_co_through(1,recess_wid_half+clr_close+w6,0,bev_m,0,xyz_to_trans([12,4,0]/2,attach_top)-outset_to_trans(1));
             }
 
-            translate(cable_gland_pos*ident_xyz([1,0,0])+[-boss_wid/2-wing_wid-w6-clr_close,case_dim.y/2-w6-(recess_len-10)/2,base_floor_thk+bev_m]) rotate([0,90,0]) cylinder_oh_bev_co_through(1,w6,bev_m,bev_m,0,xyz_to_trans([4,8,0]/2,attach_left)-outset_to_trans(1));
+            // translate(cable_gland_pos) rotate([-90,0,0]) {
+            //     cylinder_oh_bev_co_through(8/2,w6,bev_s,bev_s,clr_close);
+
+            //     translate([0,0,w6+recess_y_inset]) {
+            //         cylinder_oh_bev_co_blind_downwards(0,recess_y_inset,0,bev_s,clr_close,points_reg_polygon_flat(6)*13/2);
+            //         cylinder_bev(clr_close+bev_s,4,0,0,points_reg_polygon_flat(6)*13/2);
+            //         cylinder_bev_rad(boss_wid/2-w6,recess_len,4-w6,4-w6);
+            //     }
+            // }
+            // cylinder_bev_co_through(0.5,1,bev_m,bev_s,0,recess_crn_trans-outset_to_trans(0.5));
+
+            // translate([0,0,1]) cylinder_bev(4-w6,-1+cable_gland_pos.z,bev_m,0,recess_crn_trans);
+            // translate([0,0,1]) {
+            //     cylinder_bev(4-w6,-1+cable_gland_pos.z-2,bev_m,0,recess_crn_trans+outset_xxyy_to_trans(5,0,0,0));
+            //     intersection() {
+            //         cylinder_bev(4-w6+1,-1+cable_gland_pos.z-2+1,bev_m,1,recess_crn_trans);
+            //         cylinder_bev(4-w6,-1+cable_gland_pos.z,bev_m,0,recess_crn_trans+outset_xxyy_to_trans(5,0,0,0));
+            //     }
+            //     cylinder_bev(4-w6,-1+cable_gland_pos.z-2-0.4,bev_m,0,recess_crn_trans+outset_xxyy_to_trans(wing_wid+w6+clr_close,0,-10,0));
+            // }
+
+            // translate(cable_gland_pos*ident_xyz([1,0,0])+[-boss_wid/2-wing_wid-w6-clr_close,case_dim.y/2-w6-(recess_len-10)/2,base_floor_thk+bev_m]) rotate([0,90,0]) cylinder_oh_bev_co_through(1,w6,bev_m,bev_m,0,xyz_to_trans([4,8,0]/2,attach_left)-outset_to_trans(1));
         }
     }
 }
 
-probe_slot_dep = 4;
+module cable_gland_cutout(cable_gland_z=10,recess_wid_half=wing_wid/2-w6,recess_len=20) intersection() {
+    recess_crn_r = 4-w6;
+
+    union() {
+        translate([0,0,cable_gland_z]) rotate([-90,0,0]) {
+            cylinder_oh_bev_co_through(8/2,w6,bev_s,bev_s,clr_close);
+
+            translate([0,0,w6]) cylinder_bev(clr_close,4+recess_crn_r,min(bev_s,clr_close),0,points_reg_polygon_flat(6)*13/2);
+            translate([0,0,w6+4]) intersection() {
+                cylinder_bev_rad(recess_wid_half,-(w6+4)+recess_len,recess_crn_r,recess_crn_r);
+                translate(-[1,2,0]*50) cube([2,2,2]*50);
+            }
+        }
+
+        recess_crn_trans = xyz_to_trans([recess_wid_half,recess_len/2,0],attach_top)-outset_to_trans(recess_crn_r)-outset_xxyy_to_trans(0,0,w6+4,0);
+
+        cylinder_bev_co_through(0.5,1,bev_m,bev_s,0,recess_crn_trans-outset_to_trans(0.5));
+        translate([0,0,1]) cylinder_bev(recess_crn_r,-1+cable_gland_z,bev_m,0,recess_crn_trans);
+    }
+
+    translate(-[1,1,0]*50+[0,0,-0.01]) cube([2,2,0]*50+[0,0,probe_slot_floor_z-1.2]);
+}
+
+probe_slot_position_bottom = 1;
+probe_slot_position_side = 2;
+probe_slot_position = probe_slot_position_bottom;
+
+wing_wid = 22;
+case_with_wing_crn_trans = case_crn_trans+concat((probe_slot_position == probe_slot_position_bottom ? outset_xxyy_to_trans(0,0,1,0) : []), (probe_slot_position == probe_slot_position_side ? outset_xxyy_to_trans(0,1,0,0) : []))*(clr_close+wing_wid);
+
+wing_crn_trans = case_with_wing_crn_trans-concat((probe_slot_position == probe_slot_position_bottom ? outset_xxyy_to_trans(0,0,0,1) : [])*(case_dim.y+clr_close), (probe_slot_position == probe_slot_position_side ? outset_xxyy_to_trans(1,0,0,0) : [])*(case_dim.x+clr_close));
+
+wing_hgt = base_hgt+top_hgt;
+
+probe_slot_dep = 2;
 probe_slot_clr = clr_loose;
+probe_slot_floor_z = wing_hgt-probe_slot_dep-(10/2+0.6)-probe_slot_clr;
+magnet_pocket_hgt = probe_slot_floor_z-0.6;
+
+*difference() {
+    union() {
+        feature_probe_slot(part_base,operation_union);
+        feature_probe_slot(part_base,operation_union_nonintersect);
+
+        feature_cable_gland(part_base,operation_union);
+        feature_cable_gland(part_base,operation_union_nonintersect);
+    }
+    union() {
+        feature_probe_slot(part_base,operation_difference);
+        feature_cable_gland(part_base,operation_difference);
+    }
+}
 
 module feature_probe_slot(part,operation) {
-    probe_pos = [case_dim.x/2+clr_close+wing_wid/2,0,base_hgt+top_hgt];
+    if(probe_slot_position == probe_slot_position_bottom) feature_probe_slot_bottom(part,operation);
+    // if(probe_slot_position == probe_slot_position_side) feature_probe_slot_side(part,operation);
+}
 
+module feature_probe_slot_bottom(part,operation) {
+    wing_inset_left = 40;
+
+    case_with_wing_crn_trans = case_crn_trans+outset_xxyy_to_trans(0,0,1,0)*(clr_close+wing_wid)-outset_xxyy_to_trans(wing_inset_left,0,0,0);
+    wing_crn_trans = case_with_wing_crn_trans-outset_xxyy_to_trans(0,0,0,1)*(case_dim.y+clr_close);
+
+    if(part == part_base) {
+        if(operation == operation_union_nonintersect) difference() {
+            union() {
+                cylinder_bev(case_crn_r,base_hgt,bev_m,bev_m,case_with_wing_crn_trans);
+                if(!is_undef(wing_wid) && wing_wid > 0) intersection() {
+                    cylinder_bev(case_crn_r,wing_hgt,bev_m,bev_m,case_with_wing_crn_trans);
+                    translate([0,0,base_hgt-bev_m]) cylinder_bev_stud(case_crn_r,bev_m+top_hgt,bev_m+bev_s,bev_m,wing_crn_trans);
+                }
+
+                translate(case_dim/2*ident_xyz(-1,-1,0)+[wing_inset_left,0,0]) let(crn_r=2,hgt=base_hgt,bev_btm=bev_m,bev_top=bev_m) rotate([0,0,0]) translate(-[1,1,0]*crn_r) rotate_extrude(angle=90) polygon([
+                    [crn_r+5,-0.01],
+                    [crn_r+bev_btm,-0.01],
+                    [crn_r,bev_btm],
+                    [crn_r,hgt-bev_top],
+                    [crn_r+bev_top,hgt+0.01],
+                    [crn_r+5,hgt+0.01],
+                ]);
+            }
+            cylinder_bev_co_through(case_crn_r-w6/2,base_hgt,bev_m,bev_m,0,case_crn_trans);
+        }
+
+        probe_pos = [wing_inset_left/2,-(case_dim.y/2+clr_close+wing_wid/2),wing_hgt];
+
+        translate(probe_pos) rotate([0,0,90]) {
+            if(operation == operation_difference) probe_slot_cutout(case_dim.x-wing_inset_left);
+            if(operation == operation_placeholder) translate([0,0,-probe_slot_dep]) rotate([-90,0,0]) material_stainless_steel() {
+                translate([0,0,-11/2]) cylinder_bev(0.5,11,0.5,0.5,points_reg_polygon_flat(6)*(10/2-0.5)*rotation_matrix(180/6));
+                translate([0,0,11/2]) cylinder_bev_stud(8/2,8,0.5,8/2-5/2);
+                translate([0,0,11/2+8]) cylinder_bev_stud(5/2,150,0,0.5);
+                mirror([0,0,1]) {
+                    translate([0,0,11/2]) cylinder_bev_stud(9.3/2,22,0.5,9.3/2-7.6/2);
+                    translate([0,0,11/2+22]) cylinder_bev_stud(7.6/2,40,0,0.5);
+                }
+            }
+        }
+        translate(probe_pos*ident_xyz(1,1,0)) {
+            if(operation == operation_difference) probe_magnet_cutout();
+            if(operation == operation_placeholder) for(i=[1:4]) translate([0,0,magnet_pocket_hgt-i*magnet_80r30_h]) magnet_80r30_placeholder();
+        }
+    }
+}
+
+module feature_probe_slot_side(part,operation) {
+    if(part == part_base) {
+        if(operation == operation_union_nonintersect) difference() {
+            union() {
+                cylinder_bev(case_crn_r,base_hgt,bev_m,bev_m,case_with_wing_crn_trans);
+                if(!is_undef(wing_wid) && wing_wid > 0) intersection() {
+                    cylinder_bev(case_crn_r,wing_hgt,bev_m,bev_m,case_with_wing_crn_trans);
+                    translate([0,0,base_hgt-bev_m]) cylinder_bev_stud(case_crn_r,bev_m+top_hgt,bev_m+bev_s,bev_m,wing_crn_trans);
+                }
+            }
+            cylinder_bev_co_through(case_crn_r-w6/2,base_hgt,bev_m,bev_m,0,case_crn_trans);
+        }
+
+        probe_pos = [case_dim.x/2+clr_close+wing_wid/2,0,wing_hgt];
+
+        if(operation == operation_difference) {
+            translate(probe_pos) probe_slot_cutout(case_dim.y);
+            translate(probe_pos*ident_xyz(1,1,0)) probe_magnet_cutout();
+        }
+
+        if(operation == operation_placeholder) translate(probe_pos*ident_xyz(1,1,0)+[0,0,magnet_pocket_hgt]) for(i=[1:4]) translate([0,0,-i]*magnet_80r30_h) magnet_80r30_placeholder();
+    }
+}
+
+module probe_slot_cutout(slot_len=case_dim.y) {
     bev_top = 1;
 
     slot_r1 = 10/cos(30)/2;
 
-    if(part == part_base && operation == operation_difference) {
-        translate(probe_pos) {
-            // translate([0,-11/2,0]) slot_co_bev(slot_r1,11);
+    // translate([0,-11/2,0]) slot_co_bev(slot_r1,11);
 
-            translate([0,-11/2,0]) let(co_wid=slot_r1,co_len=11) {
-                slot_clr = probe_slot_clr;
+    translate([0,-11/2,0]) let(co_wid=slot_r1,co_len=11) {
+        slot_clr = probe_slot_clr;
 
-                rotate([-90,0,0]) translate([0,0,-slot_clr]) cylinder_bev_rad(slot_clr+0.6,co_len+2*slot_clr,slot_clr,slot_clr,let(crn_vertices=points_reg_polygon_point(6)*(slot_r1)*rotation_matrix(180/6)) concat(crn_vertices,vec_to_array([0,probe_slot_dep,0],6)+crn_vertices));
+        rotate([-90,0,0]) translate([0,0,-slot_clr]) cylinder_bev_rad(slot_clr+0.6,co_len+2*slot_clr,slot_clr,slot_clr,let(crn_vertices=points_reg_polygon_point(6)*(slot_r1)*rotation_matrix(180/6)) concat(crn_vertices,vec_to_array([0,probe_slot_dep,0],6)+crn_vertices));
 
-                cylinder_bev_co_blind_downwards(slot_clr,1,0,bev_m,0,xyz_to_trans([co_wid,co_len/2,0]+[0.5,0,0],attach_top));
+        cylinder_bev_co_blind_downwards(slot_clr,1,0,bev_m,0,xyz_to_trans([co_wid,co_len/2,0]+[0.5,0,0],attach_top));
 
-            }
-
-            translate([0,11/2,0]) slot_co_bev_upwards(8/2,8);
-            translate([0,11/2+8,0]) slot_co_bev_upwards(5/2,100);
-
-            translate([0,case_dim.y/2,0]) rotate([-90,0,0]) cylinder_bev_co_blind_downwards(5/2,1,0,bev_m,probe_slot_clr,list_y_to_vec([0,probe_slot_dep]));
-
-            translate([0,-11/2,0]) mirror([0,1,0]) slot_co_bev_upwards(9.3/2,100);
-            mirror([0,1,0]) translate([0,case_dim.y/2,0]) rotate([-90,0,0]) cylinder_bev_co_blind_downwards(9.3/2,1,0,bev_m,probe_slot_clr,list_y_to_vec([0,probe_slot_dep]));
-
-        }
-        translate(probe_pos*ident_xyz(1,1,0)) {
-            magnet_pocket_hgt = base_hgt+top_hgt-probe_slot_dep-(10/2+0.6)-probe_slot_clr-0.6;
-
-            magnet_80r30_pocket_co_upwards(magnet_pocket_hgt);
-            cylinder_bev_co_blind_upwards(magnet_80r30_r,magnet_pocket_hgt-magnet_80r30_h+1,bev_m,1,clr_close);
-            cylinder_bev_co_blind_upwards(magnet_80r30_r+1,magnet_pocket_hgt-2*magnet_80r30_h+1,bev_m,1,clr_close);
-        }
     }
+
+    translate([0,11/2,0]) slot_co_bev_upwards(8/2,8);
+    translate([0,11/2+8,0]) slot_co_bev_upwards(5/2,100);
+
+    translate([0,slot_len/2,0]) rotate([-90,0,0]) cylinder_bev_co_blind_downwards(5/2,1,0,bev_m,probe_slot_clr,list_y_to_vec([0,probe_slot_dep]));
+
+    translate([0,-11/2,0]) mirror([0,1,0]) slot_co_bev_upwards(9.3/2,100);
+    mirror([0,1,0]) translate([0,slot_len/2,0]) rotate([-90,0,0]) cylinder_bev_co_blind_downwards(9.3/2,1,0,bev_m,probe_slot_clr,list_y_to_vec([0,probe_slot_dep]));
+}
+
+module probe_magnet_cutout() {
+    magnet_80r30_pocket_co_upwards(magnet_pocket_hgt);
+    cylinder_bev_co_blind_upwards(magnet_80r30_r,magnet_pocket_hgt-magnet_80r30_h+1,bev_m,1,clr_close);
+    cylinder_bev_co_blind_upwards(magnet_80r30_r+1,magnet_pocket_hgt-2*magnet_80r30_h+1,bev_m,1,clr_close);
 }
 
 module slot_co_bev(co_wid,co_len) {
